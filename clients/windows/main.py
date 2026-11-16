@@ -197,7 +197,7 @@ class HearbotApp(tk.Tk):
 
         if self._connection is None:
             separator = "&" if "?" in url else "?"
-            full_url = f"{url}{separator}{urlencode({'lang': self._lang.get()})}"
+            full_url = f"{url}{separator}{urlencode({'lang': self._lang.get(), 'platform': 'windows'})}"
             self._set_status("Подключение…")
             try:
                 self._connection = STTConnection(full_url, self._on_message)
@@ -270,6 +270,14 @@ class HearbotApp(tk.Tk):
         if kind == "ready":
             provider = message.get("provider", "?")
             self._set_status(f"Подключено ({provider})")
+            return
+
+        if kind == "control":
+            action = message.get("action")
+            if action == "stop_recording" and self._recording:
+                self._stop_recording()
+            elif action == "start_recording" and not self._recording:
+                self._start_recording()
             return
 
         if kind == "partial":

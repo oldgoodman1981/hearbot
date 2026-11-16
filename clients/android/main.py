@@ -301,7 +301,7 @@ class HearbotApp(App):
 
         if self._connection is None:
             separator = "&" if "?" in url else "?"
-            full_url = f"{url}{separator}{urlencode({'lang': 'ru-RU'})}"
+            full_url = f"{url}{separator}{urlencode({'lang': 'ru-RU', 'platform': 'android'})}"
             self._set_status("Подключение…")
             self._connection = Connection(
                 full_url,
@@ -356,6 +356,14 @@ class HearbotApp(App):
 
         if kind == "ready":
             self._set_status(f"Подключено ({message.get('provider', '?')})")
+            return
+
+        if kind == "control":
+            action = message.get("action")
+            if action == "stop_recording" and self._recording:
+                self._stop()
+            elif action == "start_recording" and not self._recording:
+                self._start()
             return
 
         if kind == "partial":

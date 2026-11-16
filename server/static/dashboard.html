@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hearbot Control</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "system-ui", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { color-scheme: dark; }
+    body {
+      background:
+        radial-gradient(1200px 800px at 8% -12%, rgba(45, 212, 191, 0.13), transparent 60%),
+        radial-gradient(1000px 700px at 100% 0%, rgba(99, 102, 241, 0.16), transparent 55%),
+        #020617;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    .glow-dot { animation: glow 2s infinite; }
+    @keyframes glow {
+      0% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.55); }
+      70% { box-shadow: 0 0 0 10px rgba(45, 212, 191, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
+    }
+    .fade-in { animation: fade-in 0.25s ease-out both; }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans text-slate-100 antialiased">
+  <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+
+    <!-- Шапка -->
+    <header class="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 shadow-2xl shadow-slate-950/50 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-4">
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-indigo-500 shadow-lg shadow-teal-500/25">
+          <svg class="h-6 w-6 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M4 12v3M8 8v8M12 5v14M16 8v8M20 10v4" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">Hearbot Control</h1>
+          <p class="text-sm text-slate-400">Мониторинг и управление распознаванием речи</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="connectionBadge" class="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300">
+          <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+          <span id="connectionText">Подключение…</span>
+        </span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs text-slate-300">
+          Провайдер: <span id="provider" class="font-mono text-slate-100">—</span>
+        </span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs text-slate-300">
+          Uptime: <span id="uptime" class="font-mono text-slate-100">—</span>
+        </span>
+        <button id="tokenButton" class="rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-teal-500/40 hover:text-teal-300">
+          Токен
+        </button>
+      </div>
+    </header>
+
+    <!-- Статистика -->
+    <section class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-lg shadow-slate-950/30 backdrop-blur">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Клиенты онлайн</p>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-300">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+        </div>
+        <p id="statClients" class="mt-3 font-mono text-3xl font-semibold text-white">0</p>
+        <p class="mt-1 text-xs text-slate-500">активных подключений</p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-lg shadow-slate-950/30 backdrop-blur">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Реплик</p>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-300">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+        </div>
+        <p id="statUtterances" class="mt-3 font-mono text-3xl font-semibold text-white">0</p>
+        <p class="mt-1 text-xs text-slate-500">распознано за сессию</p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-lg shadow-slate-950/30 backdrop-blur">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Аудио</p>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-300">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+          </span>
+        </div>
+        <p id="statAudio" class="mt-3 font-mono text-3xl font-semibold text-white">0 с</p>
+        <p class="mt-1 text-xs text-slate-500">отправлено в STT</p>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 shadow-lg shadow-slate-950/30 backdrop-blur">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Ошибки</p>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-300">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          </span>
+        </div>
+        <p id="statErrors" class="mt-3 font-mono text-3xl font-semibold text-white">0</p>
+        <p class="mt-1 text-xs text-slate-500">сбоев распознавания</p>
+      </div>
+    </section>
+
+    <!-- Клиенты и события -->
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <section class="rounded-2xl border border-slate-800/80 bg-slate-900/60 shadow-2xl shadow-slate-950/40 backdrop-blur xl:col-span-2">
+        <div class="flex items-center justify-between border-b border-slate-800/80 px-5 py-4">
+          <div class="flex items-center gap-3">
+            <h2 class="text-base font-semibold">Подключённые клиенты</h2>
+            <span id="clientsCount" class="rounded-full border border-slate-700 bg-slate-800/70 px-2 py-0.5 font-mono text-xs text-slate-300">0</span>
+          </div>
+          <button id="refreshButton" class="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-teal-500/40 hover:text-teal-300">
+            Обновить
+          </button>
+        </div>
+        <div id="clients" class="grid gap-4 p-5 sm:grid-cols-2">
+          <div class="col-span-full rounded-xl border border-dashed border-slate-800 px-4 py-12 text-center text-sm text-slate-500">
+            Пока никто не подключён. Запустите клиент Windows или Android.
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-slate-800/80 bg-slate-900/60 shadow-2xl shadow-slate-950/40 backdrop-blur">
+        <div class="flex items-center justify-between border-b border-slate-800/80 px-5 py-4">
+          <h2 class="text-base font-semibold">События</h2>
+          <span class="text-xs text-slate-500">live</span>
+        </div>
+        <ul id="events" class="max-h-[560px] space-y-1 overflow-y-auto p-2">
+          <li class="rounded-xl px-3 py-8 text-center text-sm text-slate-500">Событий пока нет</li>
+        </ul>
+      </section>
+    </div>
+
+    <footer class="mt-8 flex flex-col items-center gap-1 pb-4 text-center text-xs text-slate-500 sm:flex-row sm:justify-between">
+      <span>Hearbot · WebSocket STT · обновление раз в секунду</span>
+      <span class="font-mono">/admin</span>
+    </footer>
+  </div>
+
+  <!-- Модальное окно токена -->
+  <div id="tokenModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+      <h2 class="text-lg font-semibold">Админ-токен</h2>
+      <p class="mt-1 text-sm leading-relaxed text-slate-400">
+        Введите значение <span class="font-mono text-slate-300">HEARBOT_ADMIN_TOKEN</span>. Если сервер не требует авторизации, оставьте поле пустым.
+      </p>
+      <input id="tokenInput" type="password" autocomplete="off" placeholder="••••••••"
+        class="mt-4 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100 outline-none transition focus:border-teal-500/60 focus:ring-2 focus:ring-teal-500/20" />
+      <div class="mt-4 flex justify-end gap-2">
+        <button id="tokenCancel" class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:bg-slate-800">Отмена</button>
+        <button id="tokenSave" class="rounded-lg bg-gradient-to-r from-teal-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-110">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="pointer-events-none fixed bottom-6 left-1/2 z-50 hidden -translate-x-1/2 rounded-xl border border-rose-500/30 bg-rose-950/90 px-4 py-2.5 text-sm text-rose-200 shadow-2xl backdrop-blur"></div>
+
+  <script>
+    const STORAGE_KEY = "hearbot-admin-token";
+
+    const ui = {
+      connectionBadge: document.getElementById("connectionBadge"),
+      connectionText: document.getElementById("connectionText"),
+      provider: document.getElementById("provider"),
+      uptime: document.getElementById("uptime"),
+      statClients: document.getElementById("statClients"),
+      statUtterances: document.getElementById("statUtterances"),
+      statAudio: document.getElementById("statAudio"),
+      statErrors: document.getElementById("statErrors"),
+      clients: document.getElementById("clients"),
+      clientsCount: document.getElementById("clientsCount"),
+      events: document.getElementById("events"),
+      tokenModal: document.getElementById("tokenModal"),
+      tokenInput: document.getElementById("tokenInput"),
+      toast: document.getElementById("toast"),
+    };
+
+    let adminToken = localStorage.getItem(STORAGE_KEY) || "";
+    let lastClientsJson = "";
+    let lastEventsJson = "";
+    let toastTimer = null;
+
+    const icons = {
+      windows: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13 7.5 1.1v-7.1H3v6Zm8.5 1.2L21 21V12.5h-9.5v7.2Zm0-15.4v7.2H21V3l-9.5 1.3Z"/></svg>',
+      android: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18a.4.4 0 0 0-.69-.4l-1.86 3.22A11.4 11.4 0 0 0 12 8.2c-1.77 0-3.44.39-4.89.92L5.25 5.9a.4.4 0 1 0-.69.4L6.4 9.48A10.8 10.8 0 0 0 1 17.8h22a10.8 10.8 0 0 0-5.4-8.32ZM6.5 15.3a1.05 1.05 0 1 1 0-2.1 1.05 1.05 0 0 1 0 2.1Zm11 0a1.05 1.05 0 1 1 0-2.1 1.05 1.05 0 0 1 0 2.1Z"/></svg>',
+      unknown: '<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8"/></svg>',
+    };
+
+    const platformStyles = {
+      windows: { label: "Windows", badge: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
+      android: { label: "Android", badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" },
+      unknown: { label: "Unknown", badge: "border-slate-600/40 bg-slate-700/30 text-slate-300" },
+    };
+
+    const eventStyles = {
+      final: { dot: "bg-indigo-400", label: "Реплика", text: "text-slate-200" },
+      connect: { dot: "bg-teal-400", label: "Подключение", text: "text-slate-300" },
+      disconnect: { dot: "bg-slate-500", label: "Отключение", text: "text-slate-400" },
+      error: { dot: "bg-rose-400", label: "Ошибка", text: "text-rose-300" },
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[ch]));
+    }
+
+    function platformInfo(platform) {
+      return platformStyles[platform] || platformStyles.unknown;
+    }
+
+    function formatDuration(totalSeconds) {
+      const seconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      if (h > 0) return `${h} ч ${String(m).padStart(2, "0")} мин`;
+      if (m > 0) return `${m} мин ${String(s).padStart(2, "0")} с`;
+      return `${s} с`;
+    }
+
+    function formatClock(timestamp) {
+      if (!timestamp) return "—";
+      return new Date(timestamp * 1000).toLocaleTimeString("ru-RU", { hour12: false });
+    }
+
+    function formatRelative(timestamp) {
+      if (!timestamp) return "";
+      const diff = Math.max(0, Date.now() / 1000 - timestamp);
+      if (diff < 60) return `${Math.round(diff)} с назад`;
+      if (diff < 3600) return `${Math.round(diff / 60)} мин назад`;
+      return `${Math.round(diff / 3600)} ч назад`;
+    }
+
+    function showToast(message) {
+      ui.toast.textContent = message;
+      ui.toast.classList.remove("hidden");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => ui.toast.classList.add("hidden"), 3200);
+    }
+
+    function setConnection(status) {
+      const styles = {
+        online: ["border-teal-500/30 bg-teal-500/10 text-teal-300", "bg-teal-400", "онлайн"],
+        offline: ["border-rose-500/30 bg-rose-500/10 text-rose-300", "bg-rose-400", "нет связи"],
+        connecting: ["border-amber-500/30 bg-amber-500/10 text-amber-300", "bg-amber-400", "подключение…"],
+      };
+      const [badge, dot, label] = styles[status] || styles.connecting;
+      ui.connectionBadge.className =
+        `inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${badge}`;
+      ui.connectionBadge.querySelector("span").className = `h-2 w-2 rounded-full ${dot}`;
+      ui.connectionText.textContent = label;
+    }
+
+    async function api(path, options = {}) {
+      const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+      if (adminToken) headers["X-Admin-Token"] = adminToken;
+
+      const response = await fetch(path, { ...options, headers });
+
+      if (response.status === 401) {
+        openTokenModal(true);
+        throw new Error("Требуется админ-токен");
+      }
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `HTTP ${response.status}`);
+      }
+      return response.status === 204 ? null : response.json();
+    }
+
+    function renderClient(client) {
+      const platform = platformInfo(client.platform);
+      const recording = Boolean(client.recording);
+      const statusBadge = recording
+        ? '<span class="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-1 text-xs font-medium text-teal-300"><span class="glow-dot h-1.5 w-1.5 rounded-full bg-teal-400"></span>Запись</span>'
+        : '<span class="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1 text-xs font-medium text-slate-400"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>Пауза</span>';
+
+      const toggleButton = recording
+        ? `<button data-action="stop_recording" data-client="${escapeHtml(client.id)}" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20">Стоп</button>`
+        : `<button data-action="start_recording" data-client="${escapeHtml(client.id)}" class="rounded-lg border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 transition hover:bg-teal-500/20">Старт</button>`;
+
+      const lastText = client.last_text
+        ? `<p class="mt-3 line-clamp-2 min-h-[2.75rem] rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-sm leading-snug text-slate-200" title="${escapeHtml(client.last_text)}">${escapeHtml(client.last_text)}</p>`
+        : '<p class="mt-3 min-h-[2.75rem] rounded-lg border border-dashed border-slate-800/70 px-3 py-2 text-sm italic text-slate-600">Нет распознанного текста</p>';
+
+      return `
+        <article class="fade-in rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${platform.badge}">${icons[client.platform] || icons.unknown}</span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="truncate text-sm font-semibold">${platform.label}</span>
+                  <span class="font-mono text-[11px] text-slate-500">#${escapeHtml(client.id)}</span>
+                </div>
+                <div class="mt-0.5 truncate font-mono text-[11px] text-slate-400">${escapeHtml(client.remote)}</div>
+              </div>
+            </div>
+            ${statusBadge}
+          </div>
+
+          <dl class="mt-4 grid grid-cols-2 gap-2 text-xs">
+            <div class="rounded-lg bg-slate-900/70 px-3 py-2">
+              <dt class="text-[10px] uppercase tracking-wider text-slate-500">Язык</dt>
+              <dd class="mt-0.5 font-mono text-slate-200">${escapeHtml(client.language)}</dd>
+            </div>
+            <div class="rounded-lg bg-slate-900/70 px-3 py-2">
+              <dt class="text-[10px] uppercase tracking-wider text-slate-500">Аудио</dt>
+              <dd class="mt-0.5 font-mono text-slate-200">${formatDuration(client.audio_seconds)}</dd>
+            </div>
+            <div class="col-span-2 rounded-lg bg-slate-900/70 px-3 py-2">
+              <dt class="text-[10px] uppercase tracking-wider text-slate-500">Подключён</dt>
+              <dd class="mt-0.5 text-slate-200">${formatClock(client.connected_at)} <span class="text-slate-500">· ${formatRelative(client.connected_at)}</span></dd>
+            </div>
+          </dl>
+
+          ${lastText}
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            ${toggleButton}
+            <button data-action="disconnect" data-client="${escapeHtml(client.id)}" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-300 transition hover:bg-rose-500/20">Отключить</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderClients(clients) {
+      ui.clientsCount.textContent = String(clients.length);
+      if (!clients.length) {
+        ui.clients.innerHTML = `
+          <div class="col-span-full rounded-xl border border-dashed border-slate-800 px-4 py-12 text-center text-sm text-slate-500">
+            Пока никто не подключён. Запустите клиент Windows или Android.
+          </div>`;
+        return;
+      }
+      ui.clients.innerHTML = clients.map(renderClient).join("");
+    }
+
+    function renderEvents(events) {
+      if (!events.length) {
+        ui.events.innerHTML =
+          '<li class="rounded-xl px-3 py-8 text-center text-sm text-slate-500">Событий пока нет</li>';
+        return;
+      }
+      ui.events.innerHTML = events.map((event) => {
+        const style = eventStyles[event.type] || eventStyles.disconnect;
+        const platform = event.platform ? platformInfo(event.platform).label : "сервер";
+        const meta = event.type === "final" && event.seconds
+          ? `<p class="mt-0.5 font-mono text-[10px] text-slate-500">${Number(event.seconds).toFixed(2)} с · ${escapeHtml(platform)}</p>`
+          : `<p class="mt-0.5 font-mono text-[10px] text-slate-500">${escapeHtml(platform)}</p>`;
+        return `
+          <li class="fade-in rounded-xl px-3 py-2.5 transition hover:bg-slate-800/40">
+            <div class="flex items-center justify-between text-[11px] text-slate-500">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="h-1.5 w-1.5 rounded-full ${style.dot}"></span>${style.label}
+              </span>
+              <span class="font-mono">${formatClock(event.at)}</span>
+            </div>
+            <p class="mt-1 break-words text-sm leading-snug ${style.text}">${escapeHtml(event.text) || "—"}</p>
+            ${meta}
+          </li>`;
+      }).join("");
+    }
+
+    function render(data) {
+      ui.provider.textContent = data.server.provider;
+      ui.uptime.textContent = formatDuration(data.stats.uptime_seconds);
+      ui.statClients.textContent = String(data.stats.clients_online);
+      ui.statUtterances.textContent = String(data.stats.total_utterances);
+      ui.statAudio.textContent = formatDuration(data.stats.total_audio_seconds);
+      ui.statErrors.textContent = String(data.stats.errors);
+
+      const clientsJson = JSON.stringify(data.clients);
+      if (clientsJson !== lastClientsJson) {
+        lastClientsJson = clientsJson;
+        renderClients(data.clients);
+      }
+
+      const eventsJson = JSON.stringify(data.events);
+      if (eventsJson !== lastEventsJson) {
+        lastEventsJson = eventsJson;
+        renderEvents(data.events);
+      }
+    }
+
+    async function refresh() {
+      try {
+        const data = await api("/api/state");
+        setConnection("online");
+        render(data);
+      } catch (error) {
+        if (error.message !== "Требуется админ-токен") {
+          setConnection("offline");
+          showToast(error.message);
+        }
+      }
+    }
+
+    async function control(clientId, action) {
+      if (action === "disconnect" && !confirm("Отключить клиента?")) return;
+      try {
+        await api(`/api/clients/${encodeURIComponent(clientId)}/control`, {
+          method: "POST",
+          body: JSON.stringify({ action }),
+        });
+        await refresh();
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    function openTokenModal(showError = false) {
+      ui.tokenInput.value = adminToken;
+      ui.tokenModal.classList.remove("hidden");
+      ui.tokenModal.classList.add("flex");
+      if (showError) showToast("Нужен админ-токен для доступа к панели");
+      setTimeout(() => ui.tokenInput.focus(), 50);
+    }
+
+    function closeTokenModal() {
+      ui.tokenModal.classList.add("hidden");
+      ui.tokenModal.classList.remove("flex");
+    }
+
+    function saveToken() {
+      adminToken = ui.tokenInput.value.trim();
+      if (adminToken) localStorage.setItem(STORAGE_KEY, adminToken);
+      else localStorage.removeItem(STORAGE_KEY);
+      closeTokenModal();
+      refresh();
+    }
+
+    ui.clients.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      control(button.dataset.client, button.dataset.action);
+    });
+
+    document.getElementById("refreshButton").addEventListener("click", refresh);
+    document.getElementById("tokenButton").addEventListener("click", () => openTokenModal(false));
+    document.getElementById("tokenSave").addEventListener("click", saveToken);
+    document.getElementById("tokenCancel").addEventListener("click", closeTokenModal);
+    ui.tokenInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") saveToken();
+      if (event.key === "Escape") closeTokenModal();
+    });
+
+    refresh();
+    setInterval(refresh, 1000);
+  </script>
+</body>
+</html>

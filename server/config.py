@@ -37,6 +37,7 @@ class Settings:
     max_utterance_seconds: float = float(os.getenv("MAX_UTTERANCE_SECONDS", "30"))
     allow_anonymous: bool = _get_bool("ALLOW_ANONYMOUS", True)
     access_token: str = os.getenv("HEARBOT_TOKEN", "").strip()
+    admin_token: str = os.getenv("HEARBOT_ADMIN_TOKEN", "").strip()
 
 
 settings = Settings()

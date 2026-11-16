@@ -7,7 +7,9 @@
   - `lang` — язык распознавания в формате BCP-47 (`ru-RU`, `en-US`). Необязателен.
   - `token` — общий токен доступа. Обязателен, только если на сервере
     `ALLOW_ANONYMOUS=false`.
-- Пример: `ws://127.0.0.1:8000/ws/stt?lang=ru-RU`
+  - `platform` — `windows` или `android`; используется панелью управления.
+    Необязателен.
+- Пример: `ws://127.0.0.1:8000/ws/stt?lang=ru-RU&platform=windows`
 
 ## Аудио
 
@@ -31,6 +33,7 @@
 ```json
 {
   "type": "ready",
+  "client_id": "a1b2c3d4",
   "provider": "dummy",
   "language": "ru-RU",
   "sample_rate": 16000,
@@ -38,6 +41,9 @@
   "max_utterance_seconds": 30
 }
 ```
+
+`client_id` — идентификатор сессии, который панель использует для команд
+управления.
 
 #### `partial`
 
@@ -85,6 +91,20 @@
 | `recognition failed` | облачный API вернул ошибку |
 | текст исключения | провайдер не смог инициализироваться (нет ключей) |
 
+#### `control`
+
+Команда управления, отправляется сервером по действию администратора из
+панели `/admin`. Клиент должен выполнить её и продолжить работу.
+
+```json
+{ "type": "control", "action": "stop_recording" }
+```
+
+| `action` | Действие клиента |
+|----------|------------------|
+| `stop_recording` | остановить запись микрофона (клиент дополнительно шлёт `stop`) |
+| `start_recording` | начать запись микрофона |
+
 #### `pong`
 
 Ответ на `ping`.
@@ -129,13 +149,21 @@
 ## Пример сессии
 
 ```
-C: (connect) ws://127.0.0.1:8000/ws/stt?lang=ru-RU
-S: {"type":"ready","provider":"dummy","language":"ru-RU",...}
+C: (connect) ws://127.0.0.1:8000/ws/stt?lang=ru-RU&platform=windows
+S: {"type":"ready","client_id":"a1b2c3d4","provider":"dummy",...}
 C: <binary 1600 bytes>
 C: <binary 1600 bytes>
 C: <binary 1600 bytes>
 C: {"type":"stop"}
 S: {"type":"final","text":"...","is_final":true,"audio_seconds":0.15}
+```
+
+Управление из панели:
+
+```
+S: {"type":"control","action":"stop_recording"}
+C: {"type":"stop"}
+S: {"type":"final","text":"...","is_final":true}
 ```
 
 ## Ограничения
