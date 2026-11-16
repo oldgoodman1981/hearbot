@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment
+.env
+
+# Caches / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+
+# Buildozer / Android
+.buildozer/
+bin/
+*.apk
+*.aab
+*.spec.bak
+
+# OS
+Thumbs.db
+.DS_Store
