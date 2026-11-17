@@ -15,8 +15,9 @@
                                                          │         ▼          │
 ┌──────────────────┐        GET /api/state               │   STTProvider      │
 │  Панель /admin   │ ◀────────────────────────────────── │    ├─ Dummy        │
-│  браузер         │ ──────────────────────────────────▶ │    └─ Yandex ──────┼──▶ SpeechKit REST
-└──────────────────┘  POST /api/clients/{id}/control     └────────────────────┘
+│  браузер         │ ──────────────────────────────────▶ │    ├─ Vosk ────────┼──▶ локальная модель
+└──────────────────┘  POST /api/clients/{id}/control     │    └─ Yandex ──────┼──▶ SpeechKit REST
+                                                         └────────────────────┘
 ```
 
 Каждый клиент работает независимо: отдельное WebSocket-соединение, отдельная
@@ -33,6 +34,7 @@
 | `server/static/dashboard.html` | веб-панель мониторинга (Tailwind + ванильный JS) |
 | `server/stt/base.py` | абстракция `STTProvider` |
 | `server/stt/dummy.py` | заглушка для разработки |
+| `server/stt/vosk.py` | офлайн-распознавание на локальной модели Vosk |
 | `server/stt/yandex.py` | Yandex SpeechKit REST v1 |
 | `server/stt/factory.py` | выбор провайдера по `STT_PROVIDER` |
 
@@ -74,6 +76,12 @@ async def close() -> None
 
 - **Dummy** — считает байты, возвращает длительность. Нужен для тестов и
   разработки UI без расхода бесплатных минут.
+- **Vosk** — офлайн-распознавание. `vosk.Model` загружается один раз на процесс
+  и кэшируется в модуле; на каждую реплику создаётся свой `KaldiRecognizer`.
+  Декодирование и загрузка модели выполняются в отдельных потоках
+  (`asyncio.to_thread`), чтобы не блокировать event loop. Промежуточные
+  результаты, которые Vosk отдаёт на паузах, накапливаются и склеиваются с
+  финальным.
 - **Yandex** — накапливает PCM в `bytearray`, при `finish()` отправляет один
   POST в `speech/v1/stt:recognize` с заголовком `Authorization: Api-Key ...`.
   Возвращает только финальный текст.
@@ -143,8 +151,9 @@ ID, платформу, IP, язык, время подключения, дли�
 
 | Переменная | По умолчанию | Назначение |
 |------------|--------------|------------|
-| `STT_PROVIDER` | `dummy` | `dummy` или `yandex` |
+| `STT_PROVIDER` | `dummy` | `dummy`, `vosk` или `yandex` |
 | `STT_LANGUAGE` | `ru-RU` | язык по умолчанию |
+| `VOSK_MODEL_PATH` | `models/vosk-model-small-ru-0.22` | путь к модели Vosk |
 | `YANDEX_API_KEY` | — | API-ключ сервисного аккаунта |
 | `YANDEX_FOLDER_ID` | — | каталог Yandex Cloud |
 | `MAX_UTTERANCE_SECONDS` | `30` | лимит длины реплики |
@@ -167,6 +176,6 @@ ID, платформу, IP, язык, время подключения, дли�
 
 1. VAD на клиенте или сервере (`webrtcvad`) — экономия трафика и бесплатных минут.
 2. Yandex gRPC v3 — partial-результаты в реальном времени.
-3. Дополнительные провайдеры: Google STT, Azure Speech, Vosk (self-hosted).
+3. Дополнительные провайдеры: Google STT, Azure Speech.
 4. JWT-аутентификация и квоты на пользователя.
 5. Docker-образ сервера и CI-сборка APK.

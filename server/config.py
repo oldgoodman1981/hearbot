@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 try:  # python-dotenv не является жёсткой зависимостью
     from dotenv import load_dotenv
@@ -24,6 +25,9 @@ def _get_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
 @dataclass(frozen=True)
 class Settings:
     stt_provider: str = os.getenv("STT_PROVIDER", "dummy").strip().lower()
@@ -32,6 +36,9 @@ class Settings:
     yandex_endpoint: str = os.getenv(
         "YANDEX_STT_ENDPOINT",
         "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize",
+    ).strip()
+    vosk_model_path: str = os.getenv(
+        "VOSK_MODEL_PATH", "models/vosk-model-small-ru-0.22"
     ).strip()
     default_language: str = os.getenv("STT_LANGUAGE", "ru-RU").strip()
     max_utterance_seconds: float = float(os.getenv("MAX_UTTERANCE_SECONDS", "30"))
