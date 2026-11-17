@@ -175,15 +175,16 @@ async def stt_socket(
 
             try:
                 recognized = await provider.finish()
-            except Exception:
+            except Exception as exc:
                 logger.exception("Ошибка распознавания")
                 await provider.start(language)
-                manager.record_error(session, "recognition failed")
+                detail = " ".join(str(exc).split())[:300] or "recognition failed"
+                manager.record_error(session, detail)
                 await manager.send_json(
                     session,
                     {
                         "type": "error",
-                        "message": "recognition failed",
+                        "message": detail,
                         "is_final": True,
                     },
                 )

@@ -5,6 +5,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
+class STTError(RuntimeError):
+    """Ошибка провайдера с сообщением, понятным пользователю."""
+
+
 class STTProvider(ABC):
     """Базовый интерфейс провайдера STT.
 
